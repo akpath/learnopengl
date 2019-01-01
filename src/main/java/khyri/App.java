@@ -5,24 +5,29 @@ import static com.jogamp.opengl.GL4.*;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.FloatBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
 import javax.swing.JFrame;
 
+import com.jogamp.common.nio.Buffers;
 import com.jogamp.opengl.GL4;
 import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.GLContext;
 import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.glu.GLU;
+import com.jogamp.opengl.util.FPSAnimator;
 
 public class App extends JFrame implements GLEventListener {
 
     private GLCanvas canvas;
     private int renderingProgram;
     private int[] vao = new int[1];
+    private float x = 0.0f;
+    private float inc = 0.01f;
 
     public App() {
         setTitle("Chapter 2 - program 1");
@@ -32,6 +37,9 @@ public class App extends JFrame implements GLEventListener {
         canvas.addGLEventListener(this);
         this.add(canvas);
         setVisible(true);
+
+        FPSAnimator animator = new FPSAnimator(canvas, 50);
+        animator.start();
     }
 
     @Override
@@ -165,8 +173,20 @@ public class App extends JFrame implements GLEventListener {
     public void display(GLAutoDrawable drawable) {
         GL4 gl = (GL4) GLContext.getCurrentGL();
         gl.glUseProgram(renderingProgram);
-        gl.glPointSize(30.0f);
-        gl.glDrawArrays(GL_POINTS, 0, 1);
+        
+        float[] bkg = { 0.0f, 0.0f, 0.0f, 1.0f };
+        FloatBuffer bkgBuffer = Buffers.newDirectFloatBuffer(bkg);
+        gl.glClearBufferfv(GL_COLOR, 0, bkgBuffer);
+        
+        x += inc;
+        
+        if(x > 1.0f) inc = -0.01f;
+        if(x < -1.0f) inc = 0.01f;
+        
+        int offset_loc = gl.glGetUniformLocation(renderingProgram, "offset");
+        gl.glProgramUniform1f(renderingProgram, offset_loc, x);
+
+        gl.glDrawArrays(GL_TRIANGLES, 0, 3);
     }
 
     @Override

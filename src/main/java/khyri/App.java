@@ -26,7 +26,8 @@ public class App extends JFrame implements GLEventListener {
     private GLCanvas canvas;
     private int renderingProgram;
     private int[] vao = new int[1];
-    private float x = 0.0f;
+    
+    private float rad = 0.0f;
     private float inc = 0.01f;
 
     public App() {
@@ -178,13 +179,13 @@ public class App extends JFrame implements GLEventListener {
         FloatBuffer bkgBuffer = Buffers.newDirectFloatBuffer(bkg);
         gl.glClearBufferfv(GL_COLOR, 0, bkgBuffer);
         
-        x += inc;
+        rad += inc;
         
-        if(x > 1.0f) inc = -0.01f;
-        if(x < -1.0f) inc = 0.01f;
+        if(rad > 6.28f) inc = -0.01f;
+        if(rad < 0.0f) inc = 0.01f;
         
-        int offset_loc = gl.glGetUniformLocation(renderingProgram, "offset");
-        gl.glProgramUniform1f(renderingProgram, offset_loc, x);
+        int rads_location = gl.glGetUniformLocation(renderingProgram, "rads");
+        gl.glProgramUniform1f(renderingProgram, rads_location, rad);
 
         gl.glDrawArrays(GL_TRIANGLES, 0, 3);
     }

@@ -1,26 +1,13 @@
 #version 430
 
-mat4 buildRotateZ(float rad) {
-	mat4 zrot = mat4(cos(rad), -sin(rad), 0.0, 0.0,
-	sin(rad), cos(rad), 0.0, 0.0,
-	0.0, 0.0, 1.0, 0.0,
-	0.0, 0.0, 0.0, 1.0);
+layout (location=0) in vec3 position;
 
-	return zrot;
+uniform mat4 mv_matrix;
+uniform mat4 proj_matrix;
+
+out vec4 varyingColor;
+
+void main(void) {
+	gl_Position = proj_matrix * mv_matrix * vec4(position, 1.0);
+	varyingColor = vec4(position, 1.0) * 0.5;
 }
-
-uniform float rads;
-
-void main() {
-	mat4 rot = buildRotateZ(rads);
-	if (gl_VertexID == 0)
-		gl_Position = vec4(0.25, -0.25, 0.0, 1.0);
-	else if (gl_VertexID == 1)
-		gl_Position = vec4(-0.25, -0.25, 0.0, 1.0);
-	else
-		gl_Position = vec4(0.25, 0.25, 0.0, 1.0);
-
-	gl_Position = rot * gl_Position;
-}
-
-

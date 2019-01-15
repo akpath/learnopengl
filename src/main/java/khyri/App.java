@@ -2,6 +2,7 @@ package khyri;
 
 import static com.jogamp.opengl.GL.GL_ARRAY_BUFFER;
 import static com.jogamp.opengl.GL.GL_DEPTH_BUFFER_BIT;
+import static com.jogamp.opengl.GL.GL_COLOR_BUFFER_BIT;
 import static com.jogamp.opengl.GL.GL_DEPTH_TEST;
 import static com.jogamp.opengl.GL.GL_FLOAT;
 import static com.jogamp.opengl.GL.GL_LEQUAL;
@@ -9,6 +10,7 @@ import static com.jogamp.opengl.GL.GL_STATIC_DRAW;
 import static com.jogamp.opengl.GL.GL_TRIANGLES;
 import static com.jogamp.opengl.GL2ES2.GL_FRAGMENT_SHADER;
 import static com.jogamp.opengl.GL2ES2.GL_VERTEX_SHADER;
+import static com.jogamp.opengl.GL2ES3.GL_COLOR;
 
 import java.nio.FloatBuffer;
 
@@ -22,6 +24,7 @@ import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.GLContext;
 import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.awt.GLCanvas;
+import com.jogamp.opengl.util.FPSAnimator;
 import com.jogamp.opengl.util.glsl.ShaderCode;
 import com.jogamp.opengl.util.glsl.ShaderProgram;
 
@@ -38,6 +41,8 @@ public class App extends JFrame implements GLEventListener {
     private float cubeX, cubeY, cubeZ;
     private Matrix4f pMat;
 
+    private float inc = 0;
+
     public App() {
         setTitle("Chapter 4 - program 1");
         setSize(600, 600);
@@ -45,6 +50,9 @@ public class App extends JFrame implements GLEventListener {
         canvas.addGLEventListener(this);
         this.add(canvas);
         setVisible(true);
+
+        FPSAnimator animator = new FPSAnimator(canvas, 50);
+        animator.start();
     }
 
     @Override
@@ -56,30 +64,31 @@ public class App extends JFrame implements GLEventListener {
 
         cameraX = 0.0f;
         cameraY = 0.0f;
-        cameraZ = 8.0f;
+        cameraZ = 20.0f;
         cubeX = 0.0f;
         cubeY = -2.0f;
         cubeZ = 0.0f;
 
         float aspect = (float) canvas.getWidth() / (float) canvas.getHeight();
         pMat = new Matrix4f().perspective((float) Math.toRadians(60.0f), aspect, 0.1f, 1000.0f);
+
+        gl.glEnable(GL_DEPTH_TEST);
     }
 
     private void setupVertices() {
         GL4 gl = (GL4) GLContext.getCurrentGL();
-        float[] vertices = { -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f,
-                1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f,
-                -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f,
-                1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f,
-                -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f,
-                -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f,
-                1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f,
-                -1.0f };
-        
+        float[] vertices = { -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f,
+                1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f,
+                1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+                -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f,
+                1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f,
+                1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f,
+                -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f };
+
         gl.glGenVertexArrays(vao.length, vao, 0);
         gl.glBindVertexArray(vao[0]);
         gl.glGenBuffers(vbo.length, vbo, 0);
-        
+
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
         FloatBuffer vertBuf = Buffers.newDirectFloatBuffer(vertices);
         gl.glBufferData(GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL_STATIC_DRAW);
@@ -106,25 +115,42 @@ public class App extends JFrame implements GLEventListener {
     @Override
     public void display(GLAutoDrawable drawable) {
         GL4 gl = (GL4) GLContext.getCurrentGL();
-        gl.glClear(GL_DEPTH_BUFFER_BIT);
+        gl.glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
         gl.glUseProgram(renderingProgram);
 
-        Matrix4f mvMat = new Matrix4f().translate(-cameraX, -cameraY, -cameraZ).translate(cubeX, cubeY, cubeZ);
+        inc += 0.01f;
 
-        int mvLoc = gl.glGetUniformLocation(renderingProgram, "mv_matrix");
         int projLoc = gl.glGetUniformLocation(renderingProgram, "proj_matrix");
         FloatBuffer floatBuffer = Buffers.newDirectFloatBuffer(16);
-        gl.glUniformMatrix4fv(mvLoc, 1, false, mvMat.get(floatBuffer));
         gl.glUniformMatrix4fv(projLoc, 1, false, pMat.get(floatBuffer));
+
+        int mvLoc = gl.glGetUniformLocation(renderingProgram, "mv_matrix");
 
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
 
-        gl.glEnable(GL_DEPTH_TEST);
-        gl.glDepthFunc(GL_LEQUAL);
+        for (int i = 0; i < 24; i++) {
+            double x = i + inc;
+            Matrix4f vMat = new Matrix4f().translate(-cameraX, -cameraY, -cameraZ);
+            Matrix4f mMat = new Matrix4f().translate(cubeX, cubeY, cubeZ);
 
-        gl.glDrawArrays(GL_TRIANGLES, 0, 36);
+            mMat.translate((float) Math.sin(2 * x) * 6.0f, (float) Math.sin(3 * x) * 6.0f,
+                    (float) Math.sin(4 * x) * 6.0f);
+            mMat.rotateX((float) Math.toRadians(x * 100));
+            mMat.rotateY((float) Math.toRadians(x * 100));
+            mMat.rotateZ((float) Math.toRadians(x * 100));
+
+            Matrix4f mvMat = vMat.mul(mMat);
+
+            gl.glUniformMatrix4fv(mvLoc, 1, false, mvMat.get(floatBuffer));
+
+            gl.glEnable(GL_DEPTH_TEST);
+            gl.glDepthFunc(GL_LEQUAL);
+
+            gl.glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
     }
 
     @Override

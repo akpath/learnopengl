@@ -125,31 +125,26 @@ public class App extends JFrame implements GLEventListener {
         FloatBuffer floatBuffer = Buffers.newDirectFloatBuffer(16);
         gl.glUniformMatrix4fv(projLoc, 1, false, pMat.get(floatBuffer));
 
-        int mvLoc = gl.glGetUniformLocation(renderingProgram, "mv_matrix");
+        int mLoc = gl.glGetUniformLocation(renderingProgram, "m_matrix");
+        int vLoc = gl.glGetUniformLocation(renderingProgram, "v_matrix");
+        int tfLoc = gl.glGetUniformLocation(renderingProgram, "tf");
 
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
 
         for (int i = 0; i < 24; i++) {
-            double x = i + inc;
             Matrix4f vMat = new Matrix4f().translate(-cameraX, -cameraY, -cameraZ);
             Matrix4f mMat = new Matrix4f().translate(cubeX, cubeY, cubeZ);
 
-            mMat.translate((float) Math.sin(2 * x) * 6.0f, (float) Math.sin(3 * x) * 6.0f,
-                    (float) Math.sin(4 * x) * 6.0f);
-            mMat.rotateX((float) Math.toRadians(x * 100));
-            mMat.rotateY((float) Math.toRadians(x * 100));
-            mMat.rotateZ((float) Math.toRadians(x * 100));
-
-            Matrix4f mvMat = vMat.mul(mMat);
-
-            gl.glUniformMatrix4fv(mvLoc, 1, false, mvMat.get(floatBuffer));
+            gl.glUniformMatrix4fv(mLoc, 1, false, mMat.get(floatBuffer));
+            gl.glUniformMatrix4fv(vLoc, 1, false, vMat.get(floatBuffer));
+            gl.glUniform1f(tfLoc, inc);
 
             gl.glEnable(GL_DEPTH_TEST);
             gl.glDepthFunc(GL_LEQUAL);
 
-            gl.glDrawArrays(GL_TRIANGLES, 0, 36);
+            gl.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 100000);
         }
     }
 

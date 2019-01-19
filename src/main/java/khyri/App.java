@@ -17,6 +17,7 @@ import java.nio.FloatBuffer;
 import javax.swing.JFrame;
 
 import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
 
 import com.jogamp.common.nio.Buffers;
 import com.jogamp.opengl.GL4;
@@ -38,9 +39,11 @@ public class App extends JFrame implements GLEventListener {
     private int[] vbo = new int[2];
 
     private float cameraX, cameraY, cameraZ;
-    private float cubeX, cubeY, cubeZ;
+//    private float cubeX, cubeY, cubeZ;
     private float pyrZ, pyrY, pyrX;
-    
+
+    private float inc = 0.0f;
+
     private Matrix4f pMat;
 
     public App() {
@@ -64,13 +67,15 @@ public class App extends JFrame implements GLEventListener {
 
         cameraX = 0.0f;
         cameraY = 0.0f;
-        cameraZ = 8.0f;
-        cubeX = 0.0f;
-        cubeY = -2.0f;
-        cubeZ = 0.0f;
-        pyrX = 2.0f;
-        pyrY = 2.0f;
-        pyrZ = -2.0f;
+        cameraZ = 16.0f;
+//        cubeX = 0.0f;
+//        cubeY = -2.0f;
+//        cubeZ = 0.0f;
+
+        // relative to the cube
+        pyrX = 0.0f;
+        pyrY = 0.0f;
+        pyrZ = 0.0f;
 
         float aspect = (float) canvas.getWidth() / (float) canvas.getHeight();
         pMat = new Matrix4f().perspective((float) Math.toRadians(60.0f), aspect, 0.1f, 1000.0f);
@@ -137,40 +142,64 @@ public class App extends JFrame implements GLEventListener {
         int projLoc = gl.glGetUniformLocation(renderingProgram, "proj_matrix");
         int mvLoc = gl.glGetUniformLocation(renderingProgram, "mv_matrix");
 
-        // cube
-        Matrix4f vMat = new Matrix4f().translate(-cameraX, -cameraY, -cameraZ);
-        Matrix4f mMat = new Matrix4f().translate(cubeX, cubeY, cubeZ);
-        Matrix4f mvMat = new Matrix4f().mul(vMat).mul(mMat);
-
         FloatBuffer buffer = Buffers.newDirectFloatBuffer(16);
-
         gl.glUniformMatrix4fv(projLoc, 1, false, pMat.get(buffer));
-        gl.glUniformMatrix4fv(mvLoc, 1, false, mvMat.get(buffer));
 
-        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-        gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
-        gl.glEnableVertexAttribArray(0);
+        // rotation rate, increment per frame
+        inc += 0.01f;
 
-        gl.glEnable(GL_DEPTH_TEST);
-        gl.glDepthFunc(GL_LEQUAL);
+        Matrix4fStack mvStack = new Matrix4fStack(4);
+        // view
+        mvStack.translate(-cameraX, -cameraY, -cameraZ);
+        // pyramid model matrix
+        mvStack.pushMatrix().translate(pyrX, pyrY, pyrZ);
+        // pyramid rotation around axis
+        mvStack.pushMatrix().rotate(inc, 1, 0, 0);
 
-        gl.glDrawArrays(GL_TRIANGLES, 0, 36);
-
-        // pyramid
-        mMat = new Matrix4f().translate(pyrX, pyrY, pyrZ);
-        mvMat = new Matrix4f().mul(vMat).mul(mMat);
-
-        gl.glUniformMatrix4fv(projLoc, 1, false, pMat.get(buffer));
-        gl.glUniformMatrix4fv(mvLoc, 1, false, mvMat.get(buffer));
-
+        // provide mv matrix to shader program and draw
+        gl.glUniformMatrix4fv(mvLoc, 1, false, mvStack.get(buffer));
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
-
         gl.glEnable(GL_DEPTH_TEST);
         gl.glDepthFunc(GL_LEQUAL);
-
         gl.glDrawArrays(GL_TRIANGLES, 0, 18);
+
+        // pop pyramid rotation off so cube does not rotate with it (it will, however,
+        // translate w/ it)
+        mvStack.popMatrix();
+
+        mvStack.pushMatrix();
+        mvStack.translate((float) Math.sin(inc) * 4.0f, 0.0f, (float) Math.cos(inc) * 4.0f);
+        mvStack.pushMatrix();
+        mvStack.rotate(inc * 2.0f, 0, 1, 0);
+
+        // provide mv matrix to shader program and draw
+        gl.glUniformMatrix4fv(mvLoc, 1, false, mvStack.get(buffer));
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+        gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+        gl.glEnable(GL_DEPTH_TEST);
+        gl.glDepthFunc(GL_LEQUAL);
+        gl.glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        // pop rotation off so small cube will not rotate with it (it will, however,
+        // translate along w/ it)
+        mvStack.popMatrix();
+
+        mvStack.pushMatrix();
+        mvStack.translate(0.0f, (float) Math.sin(inc) * 2.0f, (float) Math.cos(inc) * 2.0f);
+        mvStack.rotate(inc * 4.0f, 0, 0, 1);
+        mvStack.scale(0.25f);
+
+        // provide mv matrix to shader program and draw
+        gl.glUniformMatrix4fv(mvLoc, 1, false, mvStack.get(buffer));
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+        gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+        gl.glEnable(GL_DEPTH_TEST);
+        gl.glDepthFunc(GL_LEQUAL);
+        gl.glDrawArrays(GL_TRIANGLES, 0, 36);
     }
 
     @Override
